@@ -638,7 +638,12 @@ def icqt(C, sr=22050, hop_length=512, fmin=None,
     n_fft = basis.shape[1]
 
     # The extra factor of lengths**0.5 corrects for within-octave tapering
-    basis = basis * np.sqrt(lengths[:, np.newaxis] * n_fft)
+    basis = basis * np.sqrt(lengths[:, np.newaxis])
+
+    # Compute the gain
+    bdot = basis.conj().dot(basis.T)
+    bscale = np.sum(np.abs(bdot), axis=1)
+
     n_trim = basis.shape[1] // 2
 
     if scale:
@@ -702,7 +707,7 @@ def icqt(C, sr=22050, hop_length=512, fmin=None,
                 y_oct += y_oct_i
 
         # Remove the effects of zero-padding
-        y_oct = y_oct[n_trim:-n_trim]
+        y_oct = y_oct[n_trim:-n_trim] * bscale[i]
 
         if y is None:
             y = y_oct
