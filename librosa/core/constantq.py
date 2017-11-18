@@ -640,10 +640,12 @@ def icqt(C, sr=22050, hop_length=512, fmin=None,
     # The extra factor of lengths**0.5 corrects for within-octave tapering
     basis = basis * np.sqrt(lengths[:, np.newaxis])
 
-    # Compute the gain
+    # Estimate the gain per filter
     bdot = basis.conj().dot(basis.T)
-    bscale = np.sum(np.abs(bdot), axis=1)
-
+    #bscale = np.sum(np.abs(bdot), axis=1)
+    # The median here calculates the most common bleed between a filter and its neighbor
+    bscale = np.median(np.sum(np.abs(bdot), axis=1))
+    
     n_trim = basis.shape[1] // 2
 
     if scale:
@@ -707,7 +709,7 @@ def icqt(C, sr=22050, hop_length=512, fmin=None,
                 y_oct += y_oct_i
 
         # Remove the effects of zero-padding
-        y_oct = y_oct[n_trim:-n_trim] * bscale[i]
+        y_oct = y_oct[n_trim:-n_trim] * bscale
 
         if y is None:
             y = y_oct
