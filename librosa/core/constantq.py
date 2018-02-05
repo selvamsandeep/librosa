@@ -524,7 +524,7 @@ def icqt(C, sr=22050, hop_length=512, fmin=None,
          sparsity=0.01,
          window='hann',
          scale=True,
-         amin=1e-5):
+         amin=1e-6):
     '''Compute the inverse constant-Q transform.
 
     Given a constant-Q transform representation `C` of an audio signal `y`,
@@ -645,7 +645,7 @@ def icqt(C, sr=22050, hop_length=512, fmin=None,
     #bscale = np.sum(np.abs(bdot), axis=1)
     # The median here calculates the most common bleed between a filter and its neighbor
     bscale = np.median(np.sum(np.abs(bdot), axis=1))
-    
+
     n_trim = basis.shape[1] // 2
 
     if scale:
@@ -709,7 +709,7 @@ def icqt(C, sr=22050, hop_length=512, fmin=None,
                 y_oct += y_oct_i
 
         # Remove the effects of zero-padding
-        y_oct = y_oct[n_trim:-n_trim] * bscale
+        y_oct = y_oct[n_trim:-n_trim] #* bscale
 
         if y is None:
             y = y_oct
@@ -739,6 +739,10 @@ def __cqt_filter_fft(sr, fmin, n_bins, bins_per_octave, tuning,
 
     # Filters are padded up to the nearest integral power of 2
     n_fft = basis.shape[1]
+
+    global_win = filters.get_window('hann', n_fft)[np.newaxis]
+
+    basis /= (1e-10 + global_win)
 
     if (hop_length is not None and
             n_fft < 2.0**(1 + np.ceil(np.log2(hop_length)))):
@@ -774,7 +778,8 @@ def __cqt_response(y, n_fft, hop_length, fft_basis, mode):
     '''Compute the filter response with a target STFT hop.'''
 
     # Compute the STFT matrix
-    D = stft(y, n_fft=n_fft, hop_length=hop_length, window=np.ones,
+    D = stft(y, n_fft=n_fft, hop_length=hop_length, window='hann',
+            #             window=np.ones,
              pad_mode=mode)
 
     # And filter response energy
